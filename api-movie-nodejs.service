@@ -8,7 +8,7 @@ Restart=always
 RestartSec=1
 User=tatiana
 WorkingDirectory=/var/www/api-movie.things.tools
-ExecStart=bash ./run-debug.sh
+ExecStart=/bin/bash ./run-debug.sh
 
 [Install]
 WantedBy=multi-user.target
