@@ -1,8 +1,16 @@
 const userRoutes = require("express").Router();
-const { findUser, updateProfile } = require("../controllers/user");
-const { validateEmptyBodyRequest, validateProfileUpdate } = require("../middlewares/validate");
+const {
+  createUser, login, findAuthUser, updateProfile,
+} = require("../controllers/user");
+const {
+  validateEmptyBodyRequest, validateProfileUpdate, validateUserCreate, validateLogin,
+} = require("../middlewares/validate");
+const auth = require("../middlewares/auth");
 
-userRoutes.get("/me", validateEmptyBodyRequest, findUser);
-userRoutes.patch("/me", validateProfileUpdate, updateProfile);
+userRoutes.post("/signup", validateUserCreate, createUser);
+userRoutes.post("/signin", validateLogin, login);
+
+userRoutes.get("/users/me", auth, validateEmptyBodyRequest, findAuthUser);
+userRoutes.patch("/users/me", auth, validateProfileUpdate, updateProfile);
 
 module.exports = userRoutes;

@@ -1,5 +1,4 @@
 const bcrypt = require("bcryptjs");
-const { NODE_ENV, JWT_SECRET } = process.env;
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 const NotFoundError = require("../errors/NotFoundError");
@@ -14,8 +13,8 @@ const handleError = (err, next) => {
   next(err);
 };
 
-module.exports.findUser = (req, res, next) => {
-  User.findById(req.params.id)
+module.exports.findAuthUser = (req, res, next) => {
+  User.findById(req.user._id)
     .then((user) => {
       if (user) {
         res.send(user);
@@ -32,24 +31,24 @@ module.exports.createUser = (req, res, next) => {
   const { name, email, password } = req.body;
 
   User.checkEmailDuplicate(email).then(() => {
-      bcrypt.hash(password, 10) // соль
-        .then((hash) => User.create({
-          name, email, password: hash,
+    bcrypt.hash(password, 10) // соль
+      .then((hash) => User.create({
+        name, email, password: hash,
+      })
+        .then((data) => {
+          res.send(data);
         })
-          .then((data) => {
-            res.send(data);
-          })
-          .catch((err) => {
-            if (err.name === "ValidationError") {
-              throw new DataConflictError(errorMessages.validationErrorMessage);
-            }
-            if (err.name === "MongoError" && err.code === 11000) {
-              throw new DataConflictError(errorMessages.emailConflictErrorMessage);
-            } else {
-              next(err);
-            }
-          }));
-    })
+        .catch((err) => {
+          if (err.name === "ValidationError") {
+            throw new DataConflictError(errorMessages.validationErrorMessage);
+          }
+          if (err.name === "MongoError" && err.code === 11000) {
+            throw new DataConflictError(errorMessages.emailConflictErrorMessage);
+          } else {
+            next(err);
+          }
+        }));
+  })
     .catch((err) => {
       handleError(err, next);
     })
@@ -72,7 +71,7 @@ module.exports.login = (req, res, next) => {
 
       res.send({ token });
     })
-    .catch((err) => {
+    .catch(() => {
       throw new DataConflictError(errorMessages.authorizationErrorMessageJWT);
     })
     .catch(next);

@@ -31,23 +31,53 @@ const userSchema = new mongoose.Schema({
   },
 });
 
+/* Настройки JSON-сериализатора (для удаления хеша пароля) */
+userSchema.options.toJSON = {
+  getters: false,
+  virtuals: false,
+  minimize: false,
+  transform(doc, ret) {
+    delete ret.password; // eslint-disable-line no-param-reassign
+    delete ret.__v; // eslint-disable-line no-param-reassign, no-underscore-dangle
+    return ret;
+  },
+};
+
 // eslint-disable-next-line func-names
 userSchema.statics.findUserByCredentials = function (email, password) {
   return this.findOne({ email })
     .select("+password")
     .then((user) => {
       if (!user) {
-        return Promise.reject(new AuthorizationError(errorMessages.authorizationErrorMessageLogin));
+        throw Promise.reject(
+          new AuthorizationError(errorMessages.authorizationErrorMessageLogin),
+        );
       }
-      return bcrypt.compare(password, user.password).then((matched) => {
-        if (!matched) {
-          return Promise.reject(
-            new AuthorizationError(errorMessages.authorizationErrorMessageLogin),
-          );
-        }
-        return user;
-      });
-    });
+
+      return bcrypt.compare(password, user.password)
+
+        .then((matched) => {
+          if (!matched) {
+            throw Promise.reject(
+              new AuthorizationError(errorMessages.authorizationErrorMessageLogin),
+            );
+          }
+
+          return user;
+        });
+    })
+    .catch((err) => err);
+};
+
+// eslint-disable-next-line func-names
+userSchema.statics.checkEmailDuplicate = function (email) {
+  return this.findOne({ email })
+    .then((user) => {
+      if (user) {
+        throw Promise.reject(new AuthorizationError(errorMessages.authorizationErrorMessageLogin));
+      }
+    })
+    .catch((err) => err);
 };
 
 module.exports = mongoose.model("user", userSchema);

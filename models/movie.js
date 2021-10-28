@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
 const NotFoundError = require("../errors/NotFoundError");
-const ForbiddenError = require("../errors/ForbiddenError");
 const { errorMessages } = require("../utils/constants");
 
 const { isURL } = validator;
@@ -65,7 +64,7 @@ const movieSchema = new mongoose.Schema({
     ref: "user",
   },
   movieId: {
-    type: Number,
+    type: mongoose.Schema.Types.ObjectId,
     required: true,
   },
   nameRU: {
@@ -90,14 +89,22 @@ const movieSchema = new mongoose.Schema({
   },
 });
 
+/* Настройки JSON-сериализатора */
+movieSchema.options.toJSON = {
+  getters: false,
+  virtuals: false,
+  minimize: false,
+  transform(doc, ret) {
+    delete ret.__v; // eslint-disable-line no-param-reassign, no-underscore-dangle
+    return ret;
+  },
+};
+
 // eslint-disable-next-line func-names
-movieSchema.statics.checkMovieEntryOwner = function (movieId, userId) {
-  return this.findOne({ _id: movieId }).then((movie) => {
+movieSchema.statics.checkMovieEntryOwner = function (movieId, user) {
+  return this.findOne({ movieId, owner: user }).then((movie) => {
     if (!movie) {
       return Promise.reject(new NotFoundError(errorMessages.notFoundErrorDBMessage));
-    }
-    if (!(movie.owner.toString() === userId)) {
-      return Promise.reject(new ForbiddenError(errorMessages.forbiddenErrorMessage));
     }
     return movie;
   });
