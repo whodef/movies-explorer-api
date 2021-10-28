@@ -1,0 +1,14 @@
+[Unit]
+Description=Run nodejs app api-movie
+After=network.target
+StartLimitIntervalSec=0
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=tatiana
+WorkingDirectory=/var/www/api-movie.things.tools
+ExecStart=bash ./run-debug.sh
+
+[Install]
+WantedBy=multi-user.target
