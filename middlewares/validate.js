@@ -1,28 +1,10 @@
-const validator = require("validator");
-const { celebrate, Joi } = require("celebrate");
-const { errorMessages } = require("../utils/constants");
-const BadRequestError = require("../errors/BadRequestError");
+const validator = require('validator');
+const { celebrate, Joi } = require('celebrate');
 
-const { isURL, isMongoId } = validator;
+const { isURL } = validator;
 
-const isUrlCustomValidator = (value, helpers) => (isURL(value) ? value : helpers.message("Это поле заполнено некорректно, ожидается URL") && false);
-
-const isMongoIdCustomValidator = (value, helpers) => (isMongoId(value) ? value : helpers.message("Это поле заполнено некорректно, ожидается строка в формате MongoDB ID") && false);
-
-module.exports.validateEmptyBodyRequest = (req, res, next) => {
-  if (Object.keys(req.body).length > 0) {
-    throw new BadRequestError(errorMessages.validationErrorMessage);
-  }
-  next();
-};
-
-module.exports.validateMovieIdParams = (req, res, next) => {
-  const id = req.params.movieId;
-  if (!isMongoId(id)) {
-    throw new BadRequestError(errorMessages.validationErrorMessage);
-  }
-  next();
-};
+// HELPER for custom functions
+const isUrlCustomValidator = (value, helpers) => (isURL(value) ? value : helpers.message('Это поле заполнено некорректно, ожидается URL') && false);
 
 module.exports.validateMovieCreate = celebrate({
   body: Joi.object().keys({
@@ -37,7 +19,7 @@ module.exports.validateMovieCreate = celebrate({
     thumbnail: Joi.string().required().custom(isUrlCustomValidator),
     nameRU: Joi.string().required().regex(/[а-я.:!?"«»;@%№()*#,ё\s]/i),
     nameEN: Joi.string().required().regex(/[\w.:!?"«»;@%№()*#,\s]/i),
-    movieId: Joi.string().required().custom(isMongoIdCustomValidator),
+    movieId: Joi.number().required(),
   }),
 });
 

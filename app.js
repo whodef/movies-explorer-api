@@ -1,50 +1,48 @@
-require("dotenv").config();
-const routes = require("express").Router();
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
-const bodyParser = require("body-parser");
-const helmet = require("helmet");
-const { errors } = require("celebrate");
-const rateLimit = require("express-rate-limit");
-const { requestLogger, errorLogger } = require("./middlewares/logger");
-const NotFoundError = require("./errors/NotFoundError");
-const errorsHandler = require("./middlewares/errorsHandler");
-const { errorMessages } = require("./utils/constants");
-const auth = require("./middlewares/auth");
+require('dotenv').config();
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const helmet = require('helmet');
+const { errors } = require('celebrate');
+const router = require('./routes/index.js');
+const { requestLogger, errorLogger } = require('./middlewares/logger.js');
+const NotFoundError = require('./errors/NotFoundError.js');
+const errorsHandler = require('./middlewares/errorsHandler.js');
+const { errorMessages } = require('./utils/constants.js');
+const limiter = require('./middlewares/limiter.js');
 
 const app = express();
 
-const { PORT = 3000 } = process.env;
+const { PORT = 3000, MONGO_DSN } = process.env;
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-});
-
-mongoose.connect("mongodb://localhost:27017/moviesdb", {
+mongoose.connect(MONGO_DSN, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
 
 app.use(requestLogger);
+
 app.use(cors());
+
+app.post(limiter);
+
 app.use(helmet());
-app.use(limiter);
+
 app.use(bodyParser.json());
+
 app.use(bodyParser.urlencoded({ extended: true }));
 
-routes.use(require("./routes/user"));
-routes.use(require("./routes/movie"));
+app.use(router);
 
-app.use(routes);
-
-app.all("*", auth, () => {
-  throw new NotFoundError(errorMessages.notFoundRouteErrorMessage);
+app.use((req, res, next) => {
+  next(new NotFoundError(errorMessages.notFoundRouteErrorMessage));
 });
 
 app.use(errorLogger);
+
 app.use(errors());
+
 app.use(errorsHandler);
 
 app.listen(PORT, () => {

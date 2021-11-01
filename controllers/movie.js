@@ -1,12 +1,13 @@
-const Movie = require("../models/movie");
-const { serverMessages } = require("../utils/constants");
+const Movie = require('../models/movie.js');
+const { serverMessages, errorMessages } = require('../utils/constants.js');
 
-module.exports.getAllMovies = async (req, res, next) => {
-  const moviesList = await Movie.find({})
+module.exports.getAllMovies = (req, res, next) => {
+  Movie.find({})
+    .then((movies) => res.send(movies))
+    .catch(() => {
+      throw new errorMessages.ServerErrorMessage();
+    })
     .catch(next);
-  res.send({
-    data: moviesList,
-  });
 };
 
 module.exports.createNewMovie = async (req, res, next) => {
@@ -51,7 +52,7 @@ module.exports.deleteMovie = async (req, res, next) => {
 
   Movie.checkMovieEntryOwner(movieId, req.user)
     .then(() => {
-      Movie.deleteOne({ movieId })
+      Movie.findByIdAndDelete(movieId)
         .then(() => {
           res.send({
             message: serverMessages.movieDeleteMessage,

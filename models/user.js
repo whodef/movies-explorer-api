@@ -1,8 +1,9 @@
-const validator = require("validator");
-const bcrypt = require("bcryptjs");
-const mongoose = require("mongoose");
-const AuthorizationError = require("../errors/AuthorizationError");
-const { errorMessages } = require("../utils/constants");
+const validator = require('validator');
+const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
+const AuthorizationError = require('../errors/AuthorizationError.js');
+const { errorMessages } = require('../utils/constants.js');
+const DataConflictError = require('../errors/DataConflictError.js');
 
 const { isEmail } = validator;
 
@@ -15,7 +16,7 @@ const userSchema = new mongoose.Schema({
       validator(v) {
         return isEmail(v);
       },
-      message: "Введите корректный e-mail",
+      message: 'Введите корректный e-mail',
     },
   },
   password: {
@@ -38,7 +39,6 @@ userSchema.options.toJSON = {
   minimize: false,
   transform(doc, ret) {
     delete ret.password; // eslint-disable-line no-param-reassign
-    delete ret.__v; // eslint-disable-line no-param-reassign, no-underscore-dangle
     return ret;
   },
 };
@@ -46,7 +46,7 @@ userSchema.options.toJSON = {
 // eslint-disable-next-line func-names
 userSchema.statics.findUserByCredentials = function (email, password) {
   return this.findOne({ email })
-    .select("+password")
+    .select('+password')
     .then((user) => {
       if (!user) {
         throw Promise.reject(
@@ -74,10 +74,10 @@ userSchema.statics.checkEmailDuplicate = function (email) {
   return this.findOne({ email })
     .then((user) => {
       if (user) {
-        throw Promise.reject(new AuthorizationError(errorMessages.authorizationErrorMessageLogin));
+        throw Promise.reject(new DataConflictError(errorMessages.emailConflictErrorMessage));
       }
     })
     .catch((err) => err);
 };
 
-module.exports = mongoose.model("user", userSchema);
+module.exports = mongoose.model('user', userSchema);

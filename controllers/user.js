@@ -1,13 +1,14 @@
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const User = require("../models/user");
-const NotFoundError = require("../errors/NotFoundError");
-const DataConflictError = require("../errors/DataConflictError");
-const { errorMessages } = require("../utils/constants");
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const User = require('../models/user.js');
+const NotFoundError = require('../errors/NotFoundError.js');
+const DataConflictError = require('../errors/DataConflictError.js');
+const BadRequestError = require('../errors/BadRequestError.js');
+const { errorMessages } = require('../utils/constants.js');
 
 // Обработчик
 const handleError = (err, next) => {
-  if (err.name === "CastError") {
+  if (err.name === 'CastError') {
     throw new DataConflictError(errorMessages.validationErrorMessage);
   }
   next(err);
@@ -39,10 +40,10 @@ module.exports.createUser = (req, res, next) => {
           res.send(data);
         })
         .catch((err) => {
-          if (err.name === "ValidationError") {
-            throw new DataConflictError(errorMessages.validationErrorMessage);
+          if (err.name === 'ValidationError') {
+            throw new BadRequestError(errorMessages.authorizationErrorMessageLogin);
           }
-          if (err.name === "MongoError" && err.code === 11000) {
+          if (err.name === 'MongoError' && err.code === 11000) {
             throw new DataConflictError(errorMessages.emailConflictErrorMessage);
           } else {
             next(err);
@@ -60,13 +61,13 @@ module.exports.login = (req, res, next) => {
 
   return User.findUserByCredentials(email, password)
     .then((user) => {
-      const { NODE_ENV, JWT_SECRET_PROD } = process.env;
+      const { JWT_SECRET } = process.env;
 
       // Может генерировать исключение
       const token = jwt.sign(
         { _id: user._id },
-        NODE_ENV === "production" ? JWT_SECRET_PROD : "dev-secret",
-        { expiresIn: "7d" },
+        JWT_SECRET,
+        { expiresIn: '7d' },
       );
 
       res.send({ token });
@@ -78,9 +79,9 @@ module.exports.login = (req, res, next) => {
 };
 
 module.exports.updateProfile = (req, res, next) => {
-  const { name, about } = req.body;
+  const { name, email } = req.body;
 
-  User.findByIdAndUpdate(req.user._id, { name, about })
+  User.findByIdAndUpdate(req.user._id, { name, email })
     .then((user) => {
       if (user) {
         res.send(user);

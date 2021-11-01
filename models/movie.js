@@ -1,7 +1,7 @@
-const mongoose = require("mongoose");
-const validator = require("validator");
-const NotFoundError = require("../errors/NotFoundError");
-const { errorMessages } = require("../utils/constants");
+const mongoose = require('mongoose');
+const validator = require('validator');
+const NotFoundError = require('../errors/NotFoundError.js');
+const { errorMessages } = require('../utils/constants.js');
 
 const { isURL } = validator;
 
@@ -61,10 +61,10 @@ const movieSchema = new mongoose.Schema({
   owner: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
-    ref: "user",
+    ref: 'user',
   },
   movieId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: Number,
     required: true,
   },
   nameRU: {
@@ -95,19 +95,22 @@ movieSchema.options.toJSON = {
   virtuals: false,
   minimize: false,
   transform(doc, ret) {
-    delete ret.__v; // eslint-disable-line no-param-reassign, no-underscore-dangle
     return ret;
   },
 };
 
 // eslint-disable-next-line func-names
-movieSchema.statics.checkMovieEntryOwner = function (movieId, user) {
-  return this.findOne({ movieId, owner: user }).then((movie) => {
-    if (!movie) {
-      return Promise.reject(new NotFoundError(errorMessages.notFoundErrorDBMessage));
-    }
-    return movie;
-  });
+movieSchema.statics.checkMovieEntryOwner = function (id, user) {
+  return this.findOne({
+    _id: id,
+    owner: user,
+  })
+    .then((movie) => {
+      if (!movie) {
+        return Promise.reject(new NotFoundError(errorMessages.notFoundErrorDBMessage));
+      }
+      return movie;
+    });
 };
 
-module.exports = mongoose.model("movie", movieSchema);
+module.exports = mongoose.model('movie', movieSchema);
