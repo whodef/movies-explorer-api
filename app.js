@@ -11,12 +11,11 @@ const NotFoundError = require('./errors/NotFoundError.js');
 const errorsHandler = require('./middlewares/errorsHandler.js');
 const { errorMessages } = require('./utils/constants.js');
 const limiter = require('./middlewares/limiter.js');
+const config = require('./config/config.js');
 
 const app = express();
 
-const { PORT = 3000, MONGO_DSN } = process.env;
-
-mongoose.connect(MONGO_DSN, {
+mongoose.connect(config.mongo_dsn, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
@@ -45,6 +44,6 @@ app.use(errors());
 
 app.use(errorsHandler);
 
-app.listen(PORT, () => {
-  console.log(`Connection successful, port: ${PORT}`); // eslint-disable-line no-console
+app.listen(config.port, () => {
+  console.log(`Connection successful, port: ${config.port}`); // eslint-disable-line no-console
 });

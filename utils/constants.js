@@ -10,6 +10,7 @@ const errorMessages = {
   notFoundRouteErrorMessage: 'Запрашиваемый адрес не найден',
   ServerErrorMessage: 'Ошибка на сервере',
   corsErrorMessage: 'CORS: запрос на кросс-источник заблокирован',
+  constraintErrorMessage: 'Конфликт данных',
 };
 
 const serverMessages = {

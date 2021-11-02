@@ -4,10 +4,7 @@ const { serverMessages, errorMessages } = require('../utils/constants.js');
 module.exports.getAllMovies = (req, res, next) => {
   Movie.find({})
     .then((movies) => res.send(movies))
-    .catch(() => {
-      throw new errorMessages.ServerErrorMessage();
-    })
-    .catch(next);
+    .catch(() => next(new errorMessages.ServerErrorMessage()));
 };
 
 module.exports.createNewMovie = async (req, res, next) => {

@@ -5,23 +5,24 @@ const NotFoundError = require('../errors/NotFoundError.js');
 const DataConflictError = require('../errors/DataConflictError.js');
 const BadRequestError = require('../errors/BadRequestError.js');
 const { errorMessages } = require('../utils/constants.js');
+const config = require('../config/config.js');
+const AuthorizationError = require('../errors/AuthorizationError.js');
 
 // Обработчик
 const handleError = (err, next) => {
   if (err.name === 'CastError') {
-    throw new DataConflictError(errorMessages.validationErrorMessage);
+    return next(new DataConflictError(errorMessages.validationErrorMessage));
   }
-  next(err);
+  return next(err);
 };
 
 module.exports.findAuthUser = (req, res, next) => {
   User.findById(req.user._id)
     .then((user) => {
       if (user) {
-        res.send(user);
-      } else {
-        throw new NotFoundError(errorMessages.notFoundUserErrorMessage);
+        return res.send(user);
       }
+      return next(new NotFoundError(errorMessages.notFoundUserErrorMessage));
     })
     .catch((err) => {
       next(err);
@@ -41,19 +42,15 @@ module.exports.createUser = (req, res, next) => {
         })
         .catch((err) => {
           if (err.name === 'ValidationError') {
-            throw new BadRequestError(errorMessages.authorizationErrorMessageLogin);
+            return next(new BadRequestError(errorMessages.authorizationErrorMessageLogin));
           }
           if (err.name === 'MongoError' && err.code === 11000) {
-            throw new DataConflictError(errorMessages.emailConflictErrorMessage);
-          } else {
-            next(err);
+            return next(new DataConflictError(errorMessages.emailConflictErrorMessage));
           }
+          return next(err);
         }));
   })
-    .catch((err) => {
-      handleError(err, next);
-    })
-    .catch(next);
+    .catch((err) => handleError(err, next));
 };
 
 module.exports.login = (req, res, next) => {
@@ -61,36 +58,38 @@ module.exports.login = (req, res, next) => {
 
   return User.findUserByCredentials(email, password)
     .then((user) => {
-      const { JWT_SECRET } = process.env;
-
       // Может генерировать исключение
       const token = jwt.sign(
         { _id: user._id },
-        JWT_SECRET,
+        config.jwt_secret,
         { expiresIn: '7d' },
       );
 
       res.send({ token });
     })
-    .catch(() => {
-      throw new DataConflictError(errorMessages.authorizationErrorMessageJWT);
-    })
-    .catch(next);
+    .catch(() => next(new AuthorizationError(errorMessages.authorizationErrorMessageLogin)));
 };
 
 module.exports.updateProfile = (req, res, next) => {
   const { name, email } = req.body;
 
-  User.findByIdAndUpdate(req.user._id, { name, email })
-    .then((user) => {
-      if (user) {
-        res.send(user);
-      } else {
-        throw new NotFoundError(errorMessages.notFoundUserErrorMessage);
-      }
-    })
-    .catch((err) => {
-      handleError(err, next);
-    })
-    .catch(next);
+  User.checkEmailDuplicate(email).then(() => {
+    User.findByIdAndUpdate(req.user._id, { name, email })
+      .then((user) => {
+        if (user) {
+          res.send(user);
+        }
+        return next(new NotFoundError(errorMessages.notFoundUserErrorMessage));
+      })
+      .catch((err) => {
+        if (err.name === 'ValidationError') {
+          return next(new BadRequestError(errorMessages.validationErrorMessage));
+        }
+        if (err.name === 'MongoError' && err.code === 11000) {
+          return next(new DataConflictError(errorMessages.constraintErrorMessage));
+        }
+        return next(err);
+      });
+  })
+    .catch((err) => handleError(err, next));
 };
