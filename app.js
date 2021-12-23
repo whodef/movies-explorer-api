@@ -23,7 +23,8 @@ mongoose.connect(config.mongo_dsn, {
 app.use(requestLogger);
 
 const corsOptions = {
-  origin: true
+  origin: true,
+  credentials: true
 }
 
 // var corsOptionsDelegate = function (req, callback) {
