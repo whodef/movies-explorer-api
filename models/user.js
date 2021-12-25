@@ -73,7 +73,8 @@ userSchema.statics.findUserByCredentials = function (email, password) {
 userSchema.statics.checkEmailDuplicate = function (email, excludeId = null) {
   return this.findOne({ email })
     .then((user) => {
-      if (user && user._id !== excludeId) {
+      console.log(user)
+      if (user && user._id.toString() !== excludeId) {
         throw Promise.reject(new DataConflictError(errorMessages.emailConflictErrorMessage));
       }
     })
