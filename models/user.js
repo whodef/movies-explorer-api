@@ -70,10 +70,10 @@ userSchema.statics.findUserByCredentials = function (email, password) {
 };
 
 // eslint-disable-next-line func-names
-userSchema.statics.checkEmailDuplicate = function (email) {
+userSchema.statics.checkEmailDuplicate = function (email, excludeId = null) {
   return this.findOne({ email })
     .then((user) => {
-      if (user) {
+      if (user && user._id !== excludeId) {
         throw Promise.reject(new DataConflictError(errorMessages.emailConflictErrorMessage));
       }
     })
